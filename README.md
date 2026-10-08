@@ -8,10 +8,13 @@ Repository ini mengotomatisasi absensi harian untuk **MagangHub Kemnaker** mengg
 2. **Miniconda / Anaconda** (opsional) – Anda dapat menggunakan lingkungan Python apa saja asalkan paket yang diperlukan terpasang.
 3. **Git** – untuk meng‑clone repositori.
 
+## Catatan `.gitignore`
+File `.gitignore` telah ditambahkan entri untuk mengabaikan direktori sementara Playwright (`chrome_session/`) serta folder `Galaxies/` dan file lain yang tidak perlu di‑track.
+
 ## Cara Cepat Memulai
 ```bash
 # 1. Clone repositori
-git clone <YOUR_GITHUB_REPO_URL>
+git clone https://github.com/bimbim-byte/absen-maganghub.git
 cd absen_maganghub
 
 # 2. Buat lingkungan virtual (disarankan)
