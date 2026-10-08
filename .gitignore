@@ -1,0 +1,37 @@
+# Environment variable and credentials
+.env
+.env.local
+.env.*.local
+token.json
+
+# Python bytecode and cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+env/
+venv/
+.venv/
+ENV/
+
+# Playwright session / browser caches
+.playwright/
+test-results/
+PlaywrightSession/
+
+# Log files
+*.log
+*.tmp
+
+# IDE and OS metadata
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temp Playwright
+chrome_session/
+Galaxies/
