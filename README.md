@@ -31,6 +31,8 @@ cp .env.example .env   # salin template
 # 5. Jalankan skrip utama
 python main.py
 ```
+# 6. (Optional) Jalankan Sejenis Task Scheduler / Trigger 
+Jika menggunakan windows, buat file .bat kemudian setting Task Scheduler agar cookie selalu terjaga, serta notifikasi dapat selalu dikirimkan
 
 Skrip akan:
 - Memuat kredensial dari **.env**.
@@ -47,9 +49,6 @@ Skrip akan:
 | `TELEGRAM_CHAT_ID` | ID chat tujuan pengiriman pesan |
 | `TOKEN` | (opsional) Token akses yang sudah ada |
 | `MONEV_REFRESH_TOKEN` | (opsional) Refresh token untuk API MONEV |
-| `...` | Tambahkan variabel rahasia lain bila diperlukan |
-
-> **Jangan pernah meng‑commit file `.env`**. Repository sudah menambahkan `.env` ke `.gitignore`.
 
 ## Cara Pemilihan Interpreter
 Tidak ada lagi path Conda yang hard‑coded. Skrip cukup memakai **interpreter Python yang menjalankan `main.py`** (`sys.executable`). Pastikan Playwright terpasang di lingkungan tersebut:
@@ -65,6 +64,3 @@ Jika Anda menjalankan skrip dari lingkungan lain, interpreter tersebut akan otom
 3. Lakukan perubahan.
 4. Jika menambah variabel rahasia, perbarui `.env.example`.
 5. Ajukan pull request.
-
-## Lisensi
-MIT – bebas digunakan dan dimodifikasi.
