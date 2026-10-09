@@ -39,7 +39,6 @@ TOKEN_FILE_PATH = os.path.join(BASE_DIR, "token.json")
 
 CONFIG = {
     "TOKEN": "",
-    "PARTICIPANT_ID": os.getenv("PARTICIPANT_ID", ""),
     "LIMIT": int(os.getenv("LIMIT", "100")),
     
     # Konfigurasi Telegram Bot
@@ -228,7 +227,6 @@ def refresh_token_api():
             new_token = res_data.get("access_token")
             if new_token:
                 print("Token refreshed successfully.")
-                # Periksa apakah ada rotasi refresh token di respon cookie
                 rotated_refresh = response.cookies.get("monev_refresh_token")
                 save_token_data(new_access_token=new_token, new_refresh_token=rotated_refresh)
                 return True
@@ -255,24 +253,21 @@ def run_get_cookie_script():
         print("get_cookie.py script not found.")
         return False
 
-    # Use the current Python interpreter (with Playwright installed) to run get_cookie.py
-python_bin = sys.executable
+    python_bin = sys.executable
 
     print("Running get_cookie.py...")
     try:
-        result = subprocess.run([python_bin, script_path], cwd=BASE_DIR, check=True)
+        subprocess.run([python_bin, script_path], cwd=BASE_DIR, check=True)
         print("Browser login completed.")
 
-        # Muat ulang token & cookies dari token.json yang baru saja diupdate
-        token_info = load_token_data()
+        load_token_data()
 
-        # Jika access_token belum tertangkap langsung tetapi monev_refresh_token baru tersedia, panggil refresh API
         if not CONFIG.get("TOKEN"):
             print("Loading latest access token...")
             refresh_token_api()
 
         return True
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         print("Failed to update session via browser.")
     except Exception as e:
         print(f"Error running get_cookie.py: {e}")
@@ -329,16 +324,13 @@ def fetch_with_auto_refresh(method, url, params=None):
     if res.status_code == 401:
         print("Session expired (401). Starting recovery...")
 
-        # 1. Coba refresh via API terlebih dahulu
         recovered = refresh_token_api()
 
-        # 2. Jika API refresh gagal, jalankan get_cookie.py
         if not recovered:
             print("Refresh API failed, switching to browser login...")
             if run_get_cookie_script():
                 recovered = True
 
-        # 3. Ulangi request dengan token baru jika berhasil diperbarui
         if recovered:
             print("Retrying request with new token...")
             headers = get_headers(include_auth=True)
@@ -352,17 +344,20 @@ def fetch_with_auto_refresh(method, url, params=None):
     return res
 
 
-def get_off_days():
-    """Ambil data Day Off Pengguna"""
+def get_user_info():
+    """Ambil participant ID dan off_days dari endpoint /users/me"""
     url = f"{CONFIG['MONEV_API_BASE']}/users/me"
     try:
         response = fetch_with_auto_refresh("GET", url)
         if response.status_code == 200:
             data = response.json().get("data", {})
-            return data.get("off_days", [])
+            return {
+                "participant_id": data.get("id"),
+                "off_days": data.get("off_days", []),
+            }
     except Exception as e:
-        print(f"Error fetching weekly off days: {e}")
-    return []
+        print(f"Error fetching user info: {e}")
+    return {"participant_id": None, "off_days": []}
 
 
 def get_holiday_info(target_date):
@@ -383,10 +378,12 @@ def get_holiday_info(target_date):
 
 def fetch_daily_logs(target_date):
     """Ambil Daily Log dari API"""
+    user_info = get_user_info()
+    participant_id = user_info["participant_id"]
     url = f"{CONFIG['MONEV_API_BASE']}/daily-logs"
     params = {
         "date": target_date,
-        "participant_id": CONFIG["PARTICIPANT_ID"],
+        "participant_id": participant_id,
         "limit": CONFIG["LIMIT"]
     }
     try:
@@ -418,20 +415,17 @@ def filter_by_date(data, target_date):
 # ============================================================
 
 def check_daily_log_job():
-    # 1. Load Token & Cookie Terakhir dari File token.json
     load_token_data()
 
-    # Jika belum ada token sama sekali, coba refresh atau jalankan get_cookie
     if not CONFIG.get("TOKEN"):
         print("No access token. Obtaining new token...")
         if not refresh_token_api():
             run_get_cookie_script()
 
-    # 2. Selalu lakukan request ke web API terlebih dahulu
     print("Checking session and schedule with MagangHub...")
-    off_days = get_off_days()
+    user_info = get_user_info()
+    off_days = user_info["off_days"]
 
-    # 3. Ambil Waktu Saat Ini di WIB (Asia/Jakarta)
     tz = pytz.timezone("Asia/Jakarta")
     now = datetime.now(tz)
     
@@ -447,14 +441,11 @@ def check_daily_log_job():
 
     print(f"\nChecking attendance: {nama_hari}, {today_str} ({now.strftime('%H:%M')} WIB)")
 
-    # 4. Cek Jam Operasional
     if current_hour < CONFIG["START_HOUR"] or current_hour > CONFIG["END_HOUR"]:
         print("Outside operational hours. Skipping check.")
         return
 
-    # 5. Jalankan kode dengan normal jika dalam jam operasional
     try:
-        # Cek Day Off (Hari Libur Mingguan, misal SATURDAY / SUNDAY)
         if day_name in off_days:
             msg = (
                 f"🏖️ *Info Libur Mingguan*\n\n"
@@ -465,7 +456,6 @@ def check_daily_log_job():
             send_telegram_message(msg, is_silent=True)
             return
 
-        # Cek Hari Libur Nasional / Cuti Bersama
         holiday_info = get_holiday_info(today_str)
         if holiday_info:
             nama_libur = holiday_info.get("name", "Hari Libur Nasional")
@@ -479,12 +469,10 @@ def check_daily_log_job():
             send_telegram_message(msg, is_silent=True)
             return
 
-        # Cek Daily Log dari Monev API
         daily_logs = fetch_daily_logs(today_str)
         filtered_logs = filter_by_date(daily_logs, today_str)
 
         if filtered_logs:
-            # BILA SUDAH ABSEN
             log_state = filtered_logs[0].get("state", "TERISI")
             msg = (
                 f"✅ *Daily Log Sudah Diisi*\n\n"
@@ -494,7 +482,6 @@ def check_daily_log_job():
             print("Daily log already filled.")
             send_telegram_message(msg, is_silent=True)
         else:
-            # BILA BELUM ABSEN
             edit_url = f"https://monev.maganghub.kemnaker.go.id/dashboard/riwayat?date={today_str}&view=edit"
             msg = (
                 f"⚠️ *Pengingat Daily Log MagangHub*\n\n"
