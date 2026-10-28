@@ -26,7 +26,7 @@ except ImportError:
         except Exception:
             pass
 
-from main import (
+from maganghub_api import (
     CONFIG,
     load_token_data,
     get_user_info,
@@ -34,7 +34,7 @@ from main import (
     fetch_with_auto_refresh,
     send_telegram_message,
 )
-import generate_log
+import gemini_helper
 
 NOTES_DIR = os.path.join(BASE_DIR, "notes")
 DRAFT_DIR = os.path.join(BASE_DIR, "drafts")
@@ -194,12 +194,12 @@ def main(argv=None):
         return 2
 
     # --- Generate via Gemini -----------------------------------------
-    examples = generate_log.load_corpus()
+    examples = gemini_helper.load_corpus()
     print(f"Few-shot: {len(examples)} contoh.")
 
     try:
-        generated = generate_log.call_gemini(
-            generate_log.build_prompt(notes, examples)
+        generated = gemini_helper.call_gemini(
+            gemini_helper.build_prompt(notes, examples)
         )
     except Exception as e:
         print(f"Gagal generate: {e}")
@@ -210,16 +210,16 @@ def main(argv=None):
             )
         return 1
 
-    payload = generate_log.build_payload(date_str, generated)
+    payload = gemini_helper.build_payload(date_str, generated)
     save_draft(date_str, payload)
-    generate_log.print_preview(payload)
+    gemini_helper.print_preview(payload)
 
     if not args.submit:
         print("Mode draft: tidak ada yang dikirim.")
         return 0
 
     # --- Kirim -------------------------------------------------------
-    ok, message = generate_log.submit_payload(payload)
+    ok, message = gemini_helper.submit_payload(payload)
     print(message)
 
     if ok:

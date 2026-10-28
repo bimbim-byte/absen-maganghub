@@ -28,7 +28,7 @@ except ImportError:
         except Exception:
             pass
 
-from main import CONFIG, load_token_data, fetch_with_auto_refresh
+from maganghub_api import CONFIG, load_token_data, fetch_with_auto_refresh
 
 CORPUS_FILE = os.path.join(BASE_DIR, "activity_logs.json")
 OUTPUT_FILE = os.path.join(BASE_DIR, "generated_log.json")
@@ -70,7 +70,7 @@ def load_corpus(max_examples=6, max_chars=1200):
 
     activities = corpus.get("activities", [])
     if not activities:
-        print("[!] Korpus kosong. Jalankan collect_activity.py dulu.")
+        print("[!] Korpus kosong. Jalankan 1_ambil_data_log.py dulu.")
         return []
 
     # Ambil dari belakang: entri terbaru gaya tulisannya paling relevan
@@ -231,7 +231,7 @@ def submit_payload(payload: dict):
     # --- Terjemahkan kode error menjadi petunjuk yang bisa ditindaklanjuti
     snippet = (res.text or "")[:400]
     if res.status_code == 401:
-        msg = "Gagal (401): sesi login kedaluwarsa. Jalankan get_cookie.py lalu coba lagi."
+        msg = "Gagal (401): sesi login kedaluwarsa. Jalankan login_browser.py lalu coba lagi."
     elif res.status_code == 403:
         msg = "Gagal (403): FRONTEND_BUILD_ID usang. Perbarui nilainya di .env."
     elif res.status_code == 422:

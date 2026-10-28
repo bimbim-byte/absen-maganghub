@@ -29,8 +29,8 @@ except ImportError:
         except Exception:
             pass
 
-from main import load_token_data
-import generate_log
+from maganghub_api import load_token_data
+import gemini_helper
 
 STATUS_CHOICES = ["PRESENT", "SICK", "LEAVE", "ABSENT"]
 
@@ -200,7 +200,7 @@ class LogApp:
     # ------------------------------------------------------------------
     def _load_corpus_async(self):
         def work():
-            return generate_log.load_corpus()
+            return gemini_helper.load_corpus()
 
         def done(result):
             if isinstance(result, Exception):
@@ -233,9 +233,9 @@ class LogApp:
         self.set_status("Menghubungi Gemini...", "#0b6")
 
         def work():
-            examples = generate_log.load_corpus()
-            prompt = generate_log.build_prompt(notes, examples)
-            return generate_log.call_gemini(prompt)
+            examples = gemini_helper.load_corpus()
+            prompt = gemini_helper.build_prompt(notes, examples)
+            return gemini_helper.call_gemini(prompt)
 
         def done(result):
             self.set_busy(False)
@@ -286,7 +286,7 @@ class LogApp:
         payload = self.collect_payload()
         if not self._validate(payload):
             return
-        path = os.path.join(generate_log.OUTPUT_FILE)
+        path = os.path.join(gemini_helper.OUTPUT_FILE)
         try:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(payload, f, indent=2, ensure_ascii=False)
@@ -316,7 +316,7 @@ class LogApp:
 
         def work():
             load_token_data()
-            return generate_log.submit_payload(payload)
+            return gemini_helper.submit_payload(payload)
 
         def done(result):
             self.set_busy(False)

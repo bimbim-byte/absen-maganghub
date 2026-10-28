@@ -24,7 +24,7 @@ except ImportError:
         except Exception:
             pass
 
-from main import CONFIG, load_token_data, get_user_info, fetch_with_auto_refresh
+from maganghub_api import CONFIG, load_token_data, get_user_info, fetch_with_auto_refresh
 
 OUTPUT_FILE = os.path.join(BASE_DIR, "activity_logs.json")
 

@@ -252,19 +252,19 @@ def refresh_token_api():
 
 def run_get_cookie_script():
     """
-    Menjalankan skrip get_cookie.py untuk membuka browser Playwright,
+    Menjalankan skrip login_browser.py untuk membuka browser Playwright,
     mengambil sesi baru secara interaktif, dan memperbarui file token.json.
     """
     print("\nSession expired (401). Opening browser for re-login...")
 
-    script_path = os.path.join(BASE_DIR, "get_cookie.py")
+        script_path = os.path.join(BASE_DIR, "login_browser.py")
     if not os.path.exists(script_path):
-        print("get_cookie.py script not found.")
+        print("login_browser.py script not found.")
         return False
 
     python_bin = sys.executable
 
-    print("Running get_cookie.py...")
+    print("Running login_browser.py...")
     try:
         subprocess.run([python_bin, script_path], cwd=BASE_DIR, check=True)
         print("Browser login completed.")
@@ -279,7 +279,7 @@ def run_get_cookie_script():
     except subprocess.CalledProcessError:
         print("Failed to update session via browser.")
     except Exception as e:
-        print(f"Error running get_cookie.py: {e}")
+        print(f"Error running login_browser.py: {e}")
 
     return False
 
@@ -325,7 +325,7 @@ def fetch_with_auto_refresh(method, url, params=None, extra_headers=None):
     extra_headers : header tambahan yang menimpa nilai bawaan
                     (mis. accept/content-type agar identik dengan browser)
 
-    Jika 401: coba /auth/refresh, lalu fallback ke get_cookie.py, lalu ulangi request.
+    Jika 401: coba /auth/refresh, lalu fallback ke login_browser.py, lalu ulangi request.
     """
     def _build_headers():
         h = get_headers(include_auth=True)
@@ -412,7 +412,7 @@ def fetch_daily_logs(target_date):
             send_telegram_message(
                 "⚠️ *Sesi Login MagangHub Habis*\n\n"
                 "Sesi akun Anda telah kedaluwarsa.\n"
-                "Silakan jalankan `python get_cookie.py` di komputer untuk login ulang.",
+                "Silakan jalankan `python login_browser.py` di komputer untuk login ulang.",
                 is_silent=False
             )
     except Exception as e:
