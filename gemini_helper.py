@@ -308,7 +308,7 @@ def main(argv=None):
 
     if not args.submit:
         print("Mode preview: tidak ada data yang dikirim.")
-        print(f"Untuk mengirim: python generate_log.py \"...\" --date {target_date} --submit")
+        print(f"Untuk mengirim: python gemini_helper.py \"...\" --date {target_date} --submit")
         return 0
 
     load_token_data()

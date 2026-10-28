@@ -211,7 +211,7 @@ class LogApp:
                 self.corpus_label.config(text=f"korpus: {self.corpus_count} contoh")
             else:
                 self.corpus_label.config(
-                    text="korpus: kosong (jalankan collect_activity.py)",
+                    text="korpus: kosong (jalankan 1_ambil_data_log.py)",
                     foreground="#b58900",
                 )
 

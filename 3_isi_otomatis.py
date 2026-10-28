@@ -141,14 +141,17 @@ def main(argv=None):
 
     print(f"[auto_fill] target={date_str} submit={args.submit}")
 
-    # --- Guard jam: jangan kirim sebelum jam yang ditentukan ----------
+    # --- Guard jam: baru mengisi setelah batas jam (default 22:00) ----
     try:
-        fill_hour = int(os.getenv("FILL_HOUR", "8"))
+        fill_hour = int(os.getenv("FILL_HOUR", "22"))
     except ValueError:
-        fill_hour = 8
+        fill_hour = 22
 
     if args.submit and not args.ignore_hour and now.hour < fill_hour:
-        print(f"Belum pukul {fill_hour:02d}:00 WIB (sekarang {now.strftime('%H:%M')}). Keluar.")
+        print(
+            f"Belum pukul {fill_hour:02d}:00 WIB (sekarang {now.strftime('%H:%M')}). "
+            f"Laporan masih bisa diisi manual; pengisian otomatis menunggu batas jam."
+        )
         return 0
 
     load_token_data()
