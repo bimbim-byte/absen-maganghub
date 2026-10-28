@@ -35,3 +35,14 @@ Thumbs.db
 # Temp Playwright
 chrome_session/
 Galaxies/
+
+# My Custom
+*.bat
+*.vbs
+.continue/
+
+# Data pribadi hasil skrip (jangan di-commit)
+activity_logs.json
+generated_log.json
+notes/
+drafts/

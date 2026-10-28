@@ -222,12 +222,21 @@ def refresh_token_api():
     try:
         response = requests.post(url, headers=headers, cookies=req_cookies, data=b"", timeout=20)
 
-        if response.status_code in [200, 201]:
+                if response.status_code in [200, 201]:
             res_data = response.json()
             new_token = res_data.get("access_token")
             if new_token:
                 print("Token refreshed successfully.")
                 rotated_refresh = response.cookies.get("monev_refresh_token")
+
+                # Sinkronkan cookie di session: bila server merotasi refresh token,
+                # nilai lama menjadi tidak valid dan tidak boleh dipakai lagi.
+                if rotated_refresh:
+                    session.cookies.set(
+                        "monev_refresh_token", rotated_refresh,
+                        domain=".maganghub.kemnaker.go.id", path="/"
+                    )
+
                 save_token_data(new_access_token=new_token, new_refresh_token=rotated_refresh)
                 return True
             else:
@@ -307,19 +316,30 @@ def send_telegram_message(message_text, is_silent=False):
 # HELPER FETCH API MONEV (DENGAN AUTO RECOVERY 401)
 # ============================================================
 
-def fetch_with_auto_refresh(method, url, params=None):
+def fetch_with_auto_refresh(method, url, params=None, extra_headers=None):
     """
-    Wrapper HTTP Request:
-    Jika menerima 401 Unauthorized:
-    1. Coba refresh token instan via API (/auth/refresh).
-    2. Jika API refresh gagal (sesi mati), jalankan get_cookie.py untuk mengambil sesi baru.
-    3. Setelah token.json diperbarui, ulangi request agar mendapatkan respons 200.
+    Wrapper HTTP Request dengan auto-recovery untuk 401.
+
+    method        : 'GET' atau 'POST'
+    params        : untuk GET -> query string, untuk POST -> body JSON
+    extra_headers : header tambahan yang menimpa nilai bawaan
+                    (mis. accept/content-type agar identik dengan browser)
+
+    Jika 401: coba /auth/refresh, lalu fallback ke get_cookie.py, lalu ulangi request.
     """
-    headers = get_headers(include_auth=True)
-    if method.upper() == "GET":
-        res = session.get(url, headers=headers, params=params, timeout=15)
-    else:
-        res = session.post(url, headers=headers, json=params, timeout=15)
+    def _build_headers():
+        h = get_headers(include_auth=True)
+        if extra_headers:
+            h.update(extra_headers)
+        return h
+
+    def _send():
+        h = _build_headers()
+        if method.upper() == "GET":
+            return session.get(url, headers=h, params=params, timeout=20)
+        return session.post(url, headers=h, json=params, timeout=25)
+
+    res = _send()
 
     if res.status_code == 401:
         print("Session expired (401). Starting recovery...")
@@ -333,12 +353,8 @@ def fetch_with_auto_refresh(method, url, params=None):
 
         if recovered:
             print("Retrying request with new token...")
-            headers = get_headers(include_auth=True)
-            if method.upper() == "GET":
-                res = session.get(url, headers=headers, params=params, timeout=15)
-            else:
-                res = session.post(url, headers=headers, json=params, timeout=15)
-            if res.status_code == 200:
+            res = _send()
+            if res.status_code in (200, 201):
                 print("Session recovered successfully.")
 
     return res
