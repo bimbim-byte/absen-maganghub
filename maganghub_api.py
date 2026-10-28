@@ -222,7 +222,7 @@ def refresh_token_api():
     try:
         response = requests.post(url, headers=headers, cookies=req_cookies, data=b"", timeout=20)
 
-                if response.status_code in [200, 201]:
+        if response.status_code in [200, 201]:
             res_data = response.json()
             new_token = res_data.get("access_token")
             if new_token:
@@ -257,7 +257,7 @@ def run_get_cookie_script():
     """
     print("\nSession expired (401). Opening browser for re-login...")
 
-        script_path = os.path.join(BASE_DIR, "login_browser.py")
+    script_path = os.path.join(BASE_DIR, "login_browser.py")
     if not os.path.exists(script_path):
         print("login_browser.py script not found.")
         return False
