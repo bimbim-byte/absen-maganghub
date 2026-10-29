@@ -36,9 +36,7 @@ Thumbs.db
 chrome_session/
 Galaxies/
 
-# My Custom
-*.bat
-*.vbs
+# Extension configs
 .continue/
 
 # Data pribadi hasil skrip (jangan di-commit)
