@@ -85,7 +85,7 @@ if errorlevel 1 (
 )
 
 :: 4. Buka aplikasi GUI menggunakan pythonw - tanpa jendela hitam CMD yang menggantung
-start "" pythonw 2_aplikasi_isi_laporan.py
+start "" python 2_aplikasi_isi_laporan.py
 
 :: 5. Tutup jendela launcher
 endlocal
