@@ -4,27 +4,10 @@ import json
 import argparse
 import pytz
 from datetime import datetime, timedelta
+from env_loader import load_env
+load_env()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ENV_FILE_PATH = os.path.join(BASE_DIR, ".env")
-
-try:
-    from dotenv import load_dotenv
-    load_dotenv(ENV_FILE_PATH)
-except ImportError:
-    if os.path.exists(ENV_FILE_PATH):
-        try:
-            with open(ENV_FILE_PATH, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#") or "=" not in line:
-                        continue
-                    k, v = line.split("=", 1)
-                    k, v = k.strip(), v.strip().strip("'\"")
-                    if k and k not in os.environ:
-                        os.environ[k] = v
-        except Exception:
-            pass
 
 from maganghub_api import (
     CONFIG,
@@ -56,6 +39,27 @@ def load_notes(date_str: str) -> str:
     except Exception as e:
         print(f"Gagal membaca {path}: {e}")
         return ""
+
+def ensure_notes_file(date_str: str) -> str:
+    """
+    Pastikan file notes/YYYY-MM-DD.txt ada.
+    Jika belum, buat dengan template default dan kembalikan path-nya.
+    """
+    os.makedirs(NOTES_DIR, exist_ok=True)
+    path = os.path.join(NOTES_DIR, f"{date_str}.txt")
+    if not os.path.exists(path):
+        template = (
+            "# Catatan Aktivitas Harian\n"
+            "# Isi dengan aktivitas Anda hari ini, contoh:\n"
+            "# 08.00 - 09.00: Setup environment & meeting harian\n"
+            "# 09.00 - 12.00: Pengembangan fitur X\n"
+            "# 13.00 - 15.00: Bug fixing & testing\n"
+            "# 15.00 - 16.00: Dokumentasi & laporan\n"
+        )
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(template)
+        print(f"[auto_fill] notes/{date_str}.txt dibuat otomatis (template).")
+    return path
 
 
 def log_already_filled(participant_id: str, date_str: str):
@@ -189,16 +193,20 @@ def main(argv=None):
     # --- Catatan aktivitas -------------------------------------------
     notes = load_notes(date_str)
     if not notes:
-        msg = (
-            f"*Catatan belum tersedia*\n\n"
-            f"Daily log {nama_hari}, {date_str} belum diisi, "
-            f"tetapi belum ada catatan aktivitas.\n\n"
-            f"Buat file: `notes/{date_str}.txt`"
-        )
-        if args.submit:
-            send_telegram_message(msg, is_silent=False)
-        print(f"Catatan notes/{date_str}.txt tidak ada. Dibatalkan.")
-        return 2
+        # Auto-buat file notes jika belum ada
+        ensure_notes_file(date_str)
+        notes = load_notes(date_str)
+        if not notes:
+            msg = (
+                f"*Catatan belum tersedia*\n\n"
+                f"Daily log {nama_hari}, {date_str} belum diisi, "
+                f"dan catatan notes/{date_str}.txt masih kosong.\n\n"
+                f"Silakan isi catatan terlebih dahulu."
+            )
+            if args.submit:
+                send_telegram_message(msg, is_silent=False)
+            print(f"Catatan notes/{date_str}.txt kosong. Dibatalkan.")
+            return 2
 
     # --- Generate via Gemini -----------------------------------------
     examples = gemini_helper.load_corpus()

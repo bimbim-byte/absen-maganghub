@@ -1,62 +1,62 @@
 @echo off
+:: ======================================================================
+:: Task 2 - Cek Presensi & Notifikasi
+:: Dijadwalkan: setiap 30 menit oleh daftar_task_scheduler.bat
+:: Menjalankan: maganghub_api.py
+:: ======================================================================
 setlocal enabledelayedexpansion
-
-:: Pindah ke folder lokasi file .bat ini berada
+title MagangHub - Cek Presensi
 cd /d "%~dp0"
 
 set "LOG_FILE=%~dp0task2_cek_presensi.log"
+set "SKRIP=maganghub_api.py"
+set "ARGS="
+set "JUDUL=Task 2 - Cek Presensi & Notifikasi"
 
-echo ====================================================== >> "%LOG_FILE%"
-echo [%DATE% %TIME%] Memulai Task 2: maganghub_api.py (Cek Presensi) >> "%LOG_FILE%"
-echo ====================================================== >> "%LOG_FILE%"
+echo.>>"%LOG_FILE%"
+echo ======================================================>>"%LOG_FILE%"
+echo [%DATE% %TIME%] Mulai %JUDUL% : %SKRIP%>>"%LOG_FILE%"
+echo ======================================================>>"%LOG_FILE%"
 
-:: Cari lokasi activate.bat Conda
-set "ACTIVATE_BAT="
-for %%P in (
-    "%USERPROFILE%\.conda\Scripts\activate.bat"
-    "%USERPROFILE%\miniconda3\Scripts\activate.bat"
-    "%USERPROFILE%\Miniconda3\Scripts\activate.bat"
-    "%LOCALAPPDATA%\miniconda3\Scripts\activate.bat"
-    "%LOCALAPPDATA%\Programs\miniconda3\Scripts\activate.bat"
-    "C:\miniconda3\Scripts\activate.bat"
-    "C:\ProgramData\miniconda3\Scripts\activate.bat"
-    "%USERPROFILE%\anaconda3\Scripts\activate.bat"
-    "%USERPROFILE%\Anaconda3\Scripts\activate.bat"
-    "%LOCALAPPDATA%\anaconda3\Scripts\activate.bat"
-    "C:\anaconda3\Scripts\activate.bat"
-    "C:\ProgramData\anaconda3\Scripts\activate.bat"
-    "D:\miniconda3\Scripts\activate.bat"
-    "E:\miniconda3\Scripts\activate.bat"
-    "D:\anaconda3\Scripts\activate.bat"
-    "E:\anaconda3\Scripts\activate.bat"
-) do (
-    if not defined ACTIVATE_BAT (
-        if exist "%%~P" set "ACTIVATE_BAT=%%~P"
-    )
+:: --- Cek prasyarat ----------------------------------------------------
+if not exist "%SKRIP%" (
+    echo [%DATE% %TIME%] GAGAL: %SKRIP% tidak ditemukan di %~dp0>>"%LOG_FILE%"
+    echo.
+    echo [MASALAH] File %SKRIP% tidak ditemukan di folder ini.
+    echo.
+    exit /b 1
 )
 
-if not defined ACTIVATE_BAT (
-    where conda.bat >nul 2>&1
-    if not errorlevel 1 (
-        for /f "delims=" %%C in ('where conda.bat') do (
-            if not defined ACTIVATE_BAT (
-                if exist "%%~dpCactivate.bat" set "ACTIVATE_BAT=%%~dpCactivate.bat"
-            )
-        )
-    )
+if not exist ".env" (
+    echo [%DATE% %TIME%] GAGAL: .env tidak ditemukan>>"%LOG_FILE%"
+    echo.
+    echo [MASALAH] File .env belum ada.
+    echo           Jalankan SETUP_INSTAL.bat terlebih dahulu.
+    echo.
+    exit /b 1
 )
 
-if defined ACTIVATE_BAT (
-    call "!ACTIVATE_BAT!" maganghub
-) else (
-    call conda activate maganghub 2>nul
+:: --- Cari python env maganghub ---------------------------------------
+call "%~dp0_common.bat" :cari_python
+if not defined PYTHON_EXE (
+    where python >nul 2>&1
+    if not errorlevel 1 set "PYTHON_EXE=python"
+)
+if not defined PYTHON_EXE (
+    echo [%DATE% %TIME%] GAGAL: python.exe tidak ditemukan>>"%LOG_FILE%"
+    echo.
+    echo [MASALAH] Python tidak ditemukan.
+    echo           Jalankan SETUP_INSTAL.bat terlebih dahulu.
+    echo.
+    exit /b 1
 )
 
-:: Jalankan skrip pengecekan presensi & notifikasi
-python maganghub_api.py >> "%LOG_FILE%" 2>&1
+echo [%DATE% %TIME%] Python: !PYTHON_EXE!>>"%LOG_FILE%"
+
+:: --- Jalankan ---------------------------------------------------------
+"!PYTHON_EXE!" "%SKRIP%" %ARGS% >>"%LOG_FILE%" 2>&1
 set "EXIT_CODE=!ERRORLEVEL!"
 
-echo [%DATE% %TIME%] Task 2 selesai dengan exit code: !EXIT_CODE! >> "%LOG_FILE%"
-echo. >> "%LOG_FILE%"
-
+echo [%DATE% %TIME%] %JUDUL% selesai, exit code: !EXIT_CODE!>>"%LOG_FILE%"
+echo.>>"%LOG_FILE%"
 exit /b !EXIT_CODE!

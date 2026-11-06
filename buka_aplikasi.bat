@@ -1,92 +1,52 @@
 @echo off
+:: ======================================================================
+:: buka_aplikasi.bat - Launcher GUI Asisten Laporan Harian MagangHub
+:: Membuka 2_aplikasi_isi_laporan.py memakai python env "maganghub".
+:: ======================================================================
 setlocal enabledelayedexpansion
 title Asisten Laporan Harian MagangHub
+cd /d "%~dp0"
 
-:: 1. Tentukan lokasi folder proyek
-set "APP_DIR=%~dp0"
-if not exist "%APP_DIR%2_aplikasi_isi_laporan.py" (
-    echo.
-    echo [MASALAH] File 2_aplikasi_isi_laporan.py tidak ditemukan di:
-    echo           "%APP_DIR%"
-    echo.
-    echo Pastikan buka_aplikasi.bat berada di dalam folder proyek.
-    echo Bila ingin meletakkannya di Desktop, buat Shortcut (bukan copy file).
-    echo.
-    pause
-    exit /b 1
+:: --- Cek berkas wajib ------------------------------------------------
+if not exist "2_aplikasi_isi_laporan.py" goto :tak_ada_skrip
+if not exist ".env" goto :tak_ada_env
+
+:: --- Cari python env maganghub ---------------------------------------
+set "PYTHON_EXE="
+call "%~dp0_common.bat" :cari_python 2>nul
+if not defined PYTHON_EXE (
+    where python >nul 2>&1
+    if not errorlevel 1 set "PYTHON_EXE=python"
 )
-cd /d "%APP_DIR%"
+if not defined PYTHON_EXE goto :tak_ada_python
 
-:: 2. Cari lokasi activate.bat Conda - tidak bergantung pada lokasi pemasangan
-set "ACTIVATE_BAT="
-for %%P in (
-    "%USERPROFILE%\.conda\Scripts\activate.bat"
-    "%USERPROFILE%\miniconda3\Scripts\activate.bat"
-    "%USERPROFILE%\Miniconda3\Scripts\activate.bat"
-    "%LOCALAPPDATA%\miniconda3\Scripts\activate.bat"
-    "%LOCALAPPDATA%\Programs\miniconda3\Scripts\activate.bat"
-    "C:\miniconda3\Scripts\activate.bat"
-    "C:\ProgramData\miniconda3\Scripts\activate.bat"
-    "%USERPROFILE%\anaconda3\Scripts\activate.bat"
-    "%USERPROFILE%\Anaconda3\Scripts\activate.bat"
-    "%LOCALAPPDATA%\anaconda3\Scripts\activate.bat"
-    "C:\anaconda3\Scripts\activate.bat"
-    "C:\ProgramData\anaconda3\Scripts\activate.bat"
-    "D:\miniconda3\Scripts\activate.bat"
-    "E:\miniconda3\Scripts\activate.bat"
-    "D:\anaconda3\Scripts\activate.bat"
-    "E:\anaconda3\Scripts\activate.bat"
-) do (
-    if not defined ACTIVATE_BAT (
-        if exist "%%~P" set "ACTIVATE_BAT=%%~P"
-    )
-)
+:: --- Jalankan GUI -----------------------------------------------------
+start "" "!PYTHON_EXE!" "2_aplikasi_isi_laporan.py"
+exit /b 0
 
-if not defined ACTIVATE_BAT (
-    where conda.bat >nul 2>&1
-    if not errorlevel 1 (
-        for /f "delims=" %%C in ('where conda.bat') do (
-            if not defined ACTIVATE_BAT (
-                if exist "%%~dpCactivate.bat" set "ACTIVATE_BAT=%%~dpCactivate.bat"
-            )
-        )
-    )
-)
+:tak_ada_skrip
+echo.
+echo [MASALAH] File 2_aplikasi_isi_laporan.py tidak ditemukan di:
+echo           "%~dp0"
+echo.
+echo Pastikan buka_aplikasi.bat berada di dalam folder proyek.
+echo Bila ingin meletakkannya di Desktop, buat Shortcut, jangan copy file.
+echo.
+pause
+exit /b 1
 
-if not defined ACTIVATE_BAT (
-    echo.
-    echo [MASALAH] Miniconda / Anaconda tidak ditemukan.
-    echo           Jalankan SETUP_INSTAL.bat lebih dahulu.
-    echo.
-    pause
-    exit /b 1
-)
+:tak_ada_env
+echo.
+echo [MASALAH] File .env belum ada.
+echo           Jalankan SETUP_INSTAL.bat terlebih dahulu.
+echo.
+pause
+exit /b 1
 
-:: 3. Aktifkan Conda environment maganghub
-call "!ACTIVATE_BAT!" maganghub
-
-if not defined CONDA_PREFIX (
-    echo.
-    echo [MASALAH] Environment "maganghub" belum siap.
-    echo           Jalankan SETUP_INSTAL.bat lebih dahulu.
-    echo.
-    pause
-    exit /b 1
-)
-
-echo %CONDA_PREFIX% | findstr /i /e "\maganghub" >nul
-if errorlevel 1 (
-    echo.
-    echo [MASALAH] Environment "maganghub" belum siap.
-    echo           Jalankan SETUP_INSTAL.bat lebih dahulu.
-    echo.
-    pause
-    exit /b 1
-)
-
-:: 4. Buka aplikasi GUI menggunakan pythonw - tanpa jendela hitam CMD yang menggantung
-start "" python 2_aplikasi_isi_laporan.py
-
-:: 5. Tutup jendela launcher
-endlocal
-exit
+:tak_ada_python
+echo.
+echo [MASALAH] Python tidak ditemukan.
+echo           Jalankan SETUP_INSTAL.bat terlebih dahulu.
+echo.
+pause
+exit /b 1

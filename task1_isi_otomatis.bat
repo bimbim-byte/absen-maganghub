@@ -1,62 +1,63 @@
 @echo off
+:: ======================================================================
+:: Task 1 - Isi Daily Log Otomatis
+:: Dijadwalkan: setiap hari pukul 22:00 oleh daftar_task_scheduler.bat
+:: Menjalankan: 3_isi_otomatis.py --submit
+:: ======================================================================
 setlocal enabledelayedexpansion
-
-:: Pindah ke folder lokasi file .bat ini berada
+title MagangHub - Isi Log Otomatis
 cd /d "%~dp0"
 
 set "LOG_FILE=%~dp0task1_isi_otomatis.log"
+set "SKRIP=3_isi_otomatis.py"
+set "ARGS=--submit"
+set "JUDUL=Task 1 - Isi Daily Log Otomatis"
 
-echo ====================================================== >> "%LOG_FILE%"
-echo [%DATE% %TIME%] Memulai Task 1: 3_isi_otomatis.py --submit >> "%LOG_FILE%"
-echo ====================================================== >> "%LOG_FILE%"
+echo.>>"%LOG_FILE%"
+echo ======================================================>>"%LOG_FILE%"
+echo [%DATE% %TIME%] Mulai %JUDUL% : %SKRIP% %ARGS%>>"%LOG_FILE%"
+echo ======================================================>>"%LOG_FILE%"
 
-:: Cari lokasi activate.bat Conda
-set "ACTIVATE_BAT="
-for %%P in (
-    "%USERPROFILE%\.conda\Scripts\activate.bat"
-    "%USERPROFILE%\miniconda3\Scripts\activate.bat"
-    "%USERPROFILE%\Miniconda3\Scripts\activate.bat"
-    "%LOCALAPPDATA%\miniconda3\Scripts\activate.bat"
-    "%LOCALAPPDATA%\Programs\miniconda3\Scripts\activate.bat"
-    "C:\miniconda3\Scripts\activate.bat"
-    "C:\ProgramData\miniconda3\Scripts\activate.bat"
-    "%USERPROFILE%\anaconda3\Scripts\activate.bat"
-    "%USERPROFILE%\Anaconda3\Scripts\activate.bat"
-    "%LOCALAPPDATA%\anaconda3\Scripts\activate.bat"
-    "C:\anaconda3\Scripts\activate.bat"
-    "C:\ProgramData\anaconda3\Scripts\activate.bat"
-    "D:\miniconda3\Scripts\activate.bat"
-    "E:\miniconda3\Scripts\activate.bat"
-    "D:\anaconda3\Scripts\activate.bat"
-    "E:\anaconda3\Scripts\activate.bat"
-) do (
-    if not defined ACTIVATE_BAT (
-        if exist "%%~P" set "ACTIVATE_BAT=%%~P"
-    )
+:: --- Cek prasyarat ----------------------------------------------------
+if not exist "%SKRIP%" (
+    echo [%DATE% %TIME%] GAGAL: %SKRIP% tidak ditemukan di %~dp0>>"%LOG_FILE%"
+    echo.
+    echo [MASALAH] File %SKRIP% tidak ditemukan di folder ini.
+    echo           Pastikan semua file aplikasi berada di folder yang sama.
+    echo.
+    exit /b 1
 )
 
-if not defined ACTIVATE_BAT (
-    where conda.bat >nul 2>&1
-    if not errorlevel 1 (
-        for /f "delims=" %%C in ('where conda.bat') do (
-            if not defined ACTIVATE_BAT (
-                if exist "%%~dpCactivate.bat" set "ACTIVATE_BAT=%%~dpCactivate.bat"
-            )
-        )
-    )
+if not exist ".env" (
+    echo [%DATE% %TIME%] GAGAL: .env tidak ditemukan>>"%LOG_FILE%"
+    echo.
+    echo [MASALAH] File .env belum ada.
+    echo           Jalankan SETUP_INSTAL.bat terlebih dahulu.
+    echo.
+    exit /b 1
 )
 
-if defined ACTIVATE_BAT (
-    call "!ACTIVATE_BAT!" maganghub
-) else (
-    call conda activate maganghub 2>nul
+:: --- Cari python env maganghub ---------------------------------------
+call "%~dp0_common.bat" :cari_python
+if not defined PYTHON_EXE (
+    where python >nul 2>&1
+    if not errorlevel 1 set "PYTHON_EXE=python"
+)
+if not defined PYTHON_EXE (
+    echo [%DATE% %TIME%] GAGAL: python.exe tidak ditemukan>>"%LOG_FILE%"
+    echo.
+    echo [MASALAH] Python tidak ditemukan.
+    echo           Jalankan SETUP_INSTAL.bat terlebih dahulu.
+    echo.
+    exit /b 1
 )
 
-:: Jalankan skrip pengisian otomatis
-python 3_isi_otomatis.py --submit >> "%LOG_FILE%" 2>&1
+echo [%DATE% %TIME%] Python: !PYTHON_EXE!>>"%LOG_FILE%"
+
+:: --- Jalankan ---------------------------------------------------------
+"!PYTHON_EXE!" "%SKRIP%" %ARGS% >>"%LOG_FILE%" 2>&1
 set "EXIT_CODE=!ERRORLEVEL!"
 
-echo [%DATE% %TIME%] Task 1 selesai dengan exit code: !EXIT_CODE! >> "%LOG_FILE%"
-echo. >> "%LOG_FILE%"
-
+echo [%DATE% %TIME%] %JUDUL% selesai, exit code: !EXIT_CODE!>>"%LOG_FILE%"
+echo.>>"%LOG_FILE%"
 exit /b !EXIT_CODE!

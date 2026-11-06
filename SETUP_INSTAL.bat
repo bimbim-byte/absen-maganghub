@@ -24,7 +24,6 @@ echo  Jendela ini JANGAN ditutup selama proses berjalan.
 echo.
 pause
 echo.
-
 if not exist "requirements.txt" (
     echo [GAGAL] File requirements.txt tidak ditemukan di folder ini.
     echo         Pastikan SETUP_INSTAL.bat berada di folder yang sama
@@ -88,7 +87,6 @@ if not defined ACTIVATE_BAT (
 
 echo        Ditemukan: "!ACTIVATE_BAT!"
 echo.
-
 echo [2/7] Mengaktifkan Conda...
 echo ----------------------------------------------------------------------
 
@@ -106,7 +104,6 @@ if errorlevel 1 (
 )
 echo        Conda siap dipakai.
 echo.
-
 echo [3/7] Menyiapkan environment "%ENV_NAME%"...
 echo ----------------------------------------------------------------------
 
@@ -150,7 +147,6 @@ if errorlevel 1 (
 
 echo        Aktif di: %CONDA_PREFIX%
 echo.
-
 echo [4/7] Memasang paket Python...
 echo ----------------------------------------------------------------------
 python -m pip install --upgrade pip --quiet
@@ -164,7 +160,6 @@ if errorlevel 1 (
     exit /b 1
 )
 echo.
-
 echo [5/7] Memasang browser untuk login...
 echo ----------------------------------------------------------------------
 python -m playwright install chromium
@@ -176,7 +171,6 @@ if errorlevel 1 (
     echo                    Pasang manual dari https://www.google.com/chrome/
 )
 echo.
-
 echo [6/7] Menyiapkan file pengaturan dan folder kerja...
 echo ----------------------------------------------------------------------
 
@@ -195,7 +189,6 @@ if not exist "notes" mkdir "notes"
 if not exist "drafts" mkdir "drafts"
 echo        Folder notes dan drafts siap.
 echo.
-
 echo [7/7] Menguji hasil pemasangan...
 echo ----------------------------------------------------------------------
 python -c "import requests, pytz, dotenv, playwright" >nul 2>&1
@@ -215,20 +208,23 @@ if errorlevel 1 (
     echo        Tampilan aplikasi OK.
 )
 echo.
-
 echo ======================================================================
 echo                        SETUP SELESAI
 echo ======================================================================
 echo.
 echo  Langkah berikutnya, lakukan berurutan:
 echo.
-echo    1. Jalankan LOGIN_MAGANGHUB.bat
+echo    1. Login ke MagangHub (WAJIB, sekali saja ^& saat sesi kedaluwarsa)
+echo         conda activate maganghub
+echo         python login_browser.py
 echo       Browser akan terbuka. Login seperti biasa.
 echo       Setelah masuk dashboard, tutup jendela browser.
 echo.
-echo    2. Jalankan buka_aplikasi.bat
+echo    2. Buka aplikasi pengisian laporan
+echo         conda activate maganghub
+echo         python 2_aplikasi_isi_laporan.py
 echo       Tulis catatan aktivitas, tekan Generate via Gemini,
-echo       lalu tekan Kirim Laporan Harian MagangHub.
+echo       lalu tekan "Kirim ke MagangHub".
 echo.
 echo  Opsional:
 echo    - Isi GEMINI_API_KEY di file .env agar AI bisa menulis otomatis.

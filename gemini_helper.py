@@ -4,29 +4,11 @@ import json
 import argparse
 import pytz
 from datetime import datetime, date
-
 import requests
+from env_loader import load_env
+load_env()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ENV_FILE_PATH = os.path.join(BASE_DIR, ".env")
-
-try:
-    from dotenv import load_dotenv
-    load_dotenv(ENV_FILE_PATH)
-except ImportError:
-    if os.path.exists(ENV_FILE_PATH):
-        try:
-            with open(ENV_FILE_PATH, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#") or "=" not in line:
-                        continue
-                    k, v = line.split("=", 1)
-                    k, v = k.strip(), v.strip().strip("'\"")
-                    if k and k not in os.environ:
-                        os.environ[k] = v
-        except Exception:
-            pass
 
 from maganghub_api import CONFIG, load_token_data, fetch_with_auto_refresh
 
@@ -86,7 +68,7 @@ def load_corpus(max_examples=6, max_chars=1200):
     return examples
 
 
-def build_prompt(user_input: str, examples: list) -> str:
+def build_prompt(user_input: str, examples: list, insight: dict = None) -> str:
     parts = []
 
     if examples:
@@ -101,6 +83,13 @@ def build_prompt(user_input: str, examples: list) -> str:
                 f"lesson_learned:\n{ex['lesson_learned']}\n\n"
                 f"obstacles:\n{ex['obstacles']}\n"
             )
+
+    if insight:
+        parts.append(
+            "Konteks pola kerja peserta (dari riwayat log sebelumnya). Pakai "
+            "untuk menyesuaikan gaya, kedalaman teknis, dan penanda waktu:\n"
+            f"{json.dumps(insight, ensure_ascii=False, indent=2)}\n"
+        )
 
     parts.append(
         "Sekarang tulis daily log baru berdasarkan catatan pengguna berikut.\n\n"

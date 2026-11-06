@@ -1,179 +1,209 @@
-# Absen MagangHub Kemnaker Automation
+# Absen & Laporan MagangHub Kemnaker
 
-Aplikasi asisten dan otomatisasi pengisian **Laporan Harian (Daily Log)** dan presensi untuk peserta program MagangHub Kementerian Ketenagakerjaan (Kemnaker) Republik Indonesia.
-
-Aplikasi ini mengubah catatan aktivitas harian yang ringkas menjadi laporan kerja formal dan terstruktur secara instan menggunakan bantuan model AI (Google Gemini), lalu mengirimkannya langsung ke sistem MagangHub Kemnaker melalui antarmuka API resmi.
+Aplikasi bantu untuk **peserta magang MagangHub Kemnaker**: mengubah catatan aktivitas harian Anda menjadi laporan kerja formal secara otomatis dengan bantuan AI, lalu mengirimkannya ke sistem MagangHub.
 
 ---
 
-## 🛡️ Jaminan Keamanan & Privasi (Security & Privacy First)
+## Daftar Isi
 
-Aplikasi ini dirancang dengan prinsip **Local-First & Zero-Intermediary** untuk memastikan keamanan dan kerahasiaan akun Anda:
-
-* **Tanpa Server Pihak Ketiga (No Third-Party Backend)**: Tidak ada server perantara, basis data daring, atau analitik yang dioperasikan oleh pengembang. Seluruh eksekusi berjalan 100% di komputer lokal Anda.
-* **Koneksi Langsung & Terverifikasi**:
-  * Seluruh data absensi dan laporan dikirim langsung ke endpoint resmi Kemnaker: `https://monev-api.maganghub.kemnaker.go.id/api/v1`.
-  * Pemrosesan teks laporan hanya dikirim langsung ke Google Gemini API (`https://generativelanguage.googleapis.com`) menggunakan API Key pribadi pengguna.
-  * Notifikasi bot dikirim langsung ke server Telegram (`https://api.telegram.org`).
-* **Kredensial Akun Aman**: Kata sandi (*password*) Anda tidak pernah dibaca, disimpan, atau dicatat oleh aplikasi. Login dilakukan melalui browser Google Chrome resmi via Playwright, dan sesi disimpan secara lokal di file [**`token.json`**](file:///c:/Utilities/bim_fixcode/absen-maganghub/token.json).
-* **Kode Sumber Terbuka & Transparan**: Setiap baris skrip Python dan file Batch terbuka untuk diaudit dan ditinjau secara bebas.
-* **Perlindungan Repositori Bawaan**: File sensitif seperti `.env`, `token.json`, `activity_logs.json`, folder catatan `notes/`, dan draft `drafts/` secara baku telah didaftarkan pada [**`.gitignore`**](file:///c:/Utilities/bim_fixcode/absen-maganghub/.gitignore) untuk mencegah kebocoran data pribadi ke repositori publik.
-
----
-
-## ✨ Fitur Utama
-
-* **Desktop GUI App (Tkinter)**: Tampilan visual yang bersih, ringan, dan responsif. Mendukung tombol pintas `Ctrl+Enter` untuk generate laporan secara cepat.
-* **Few-Shot Learning Gemini AI**: AI tidak hanya mengarang, tetapi dilatih meniru gaya bahasa, kedalaman teknis, dan struktur laporan historis Anda sendiri dari log masa lalu.
-* **Smart Auto-Recovery Sesi (HTTP 401)**: Jika masa aktif access token habis, sistem otomatis melakukan pembaruan (*refresh token*) di latar belakang tanpa mengganggu alur kerja pengguna.
-* **Pengisian Otomatis Terjadwal**: Tersedia skrip headless yang dapat diintegrasikan dengan Windows Task Scheduler untuk mengisi laporan otomatis pada pukul 22:00 WIB dari file catatan harian (`notes/YYYY-MM-DD.txt`).
-* **Proteksi Hari Libur**: Otomatis mendeteksi hari libur nasional resmi Kemnaker dan hari libur mingguan profil peserta agar tidak mengirimkan laporan pada hari non-kerja.
-* **Notifikasi Telegram**: Memberikan pengingat absensi, konfirmasi keberhasilan pengiriman laporan, dan peringatan jika sesi login kedaluwarsa.
+- [Apa yang Dilakukan Aplikasi Ini](#apa-yang-dilakukan-aplikasi-ini)
+- [Apakah Aman?](#apakah-aman)
+- [Persiapan Sebelum Memulai](#persiapan-sebelum-memulai)
+- [Instalasi — Sekali Saja](#instalasi--sekali-saja)
+- [Pemakaian Sehari-hari](#pemakaian-sehari-hari)
+- [Tombol Cepat Kategori](#tombol-cepat-kategori)
+- [Pengisian Otomatis Terjadwal](#pengisian-otomatis-terjadwal-opsional)
+- [Pengaturan Opsional](#pengaturan-opsional)
+- [Daftar Berkas Penting](#daftar-berkas-penting)
+- [Jika Ada Masalah](#jika-ada-masalah)
+- [Catatan & Tanggung Jawab](#catatan--tanggung-jawab)
 
 ---
 
-## 📁 Struktur Berkas
+## Apa yang Dilakukan Aplikasi Ini
 
-```text
-absen-maganghub/
-├── 2_aplikasi_isi_laporan.py    # Aplikasi GUI Desktop utama (Tkinter)
-├── login_browser.py             # Penangan login SSO & penyimpan sesi Playwright
-├── maganghub_api.py             # Driver API MagangHub, token recovery & Telegram
-├── gemini_helper.py             # Modul integrasi Google Gemini AI & submit payload
-├── 1_ambil_data_log.py          # Pengekstrak log historis untuk basis few-shot AI
-├── 3_isi_otomatis.py            # Skrip pengisian otomatis berbasis CLI/jadwal
-│
-├── SETUP_INSTAL.bat             # Skrip instalasi & penyiapan Conda otomatis
-├── buka_aplikasi.bat            # Launcher GUI Desktop tanpa konsol hitam
-├── LOGIN_MAGANGHUB.bat          # Launcher perpanjangan sesi login di browser
-├── daftar_task_scheduler.bat    # Pendaftar tugas otomatis ke Windows Task Scheduler
-├── hapus_task_scheduler.bat     # Penghapus tugas terjadwal dari Windows
-├── task1_isi_otomatis.bat       # Wrapper task scheduler: pengisian harian
-├── task2_cek_presensi.bat       # Wrapper task scheduler: cek presensi berkala
-├── task3_ambil_log.bat          # Wrapper task scheduler: sinkronisasi log mingguan
-├── run_hidden.vbs               # Eksekutor batch background senyap
-├── run_reminder.bat             # Skrip diagnostik & pengingat presensi
-│
-├── requirements.txt             # Dependensi Python pip
-├── environment.yml              # Manifes environment Conda standar
-├── .env.example                 # Template variabel konfigurasi lingkungan
-├── PANDUAN_PENGGUNA.md          # Panduan pemakaian ramah pemula
-└── README.md                    # Dokumentasi teknis proyek
+1. Anda menulis catatan singkat aktivitas hari ini.
+2. AI (Google Gemini) mengubahnya menjadi tiga bagian laporan yang rapi:
+   - **Aktivitas Harian** — apa yang Anda kerjakan
+   - **Pelajaran yang Didapat** — ilmu yang Anda peroleh
+   - **Kendala** — hambatan yang dihadapi
+3. Laporan dikirim langsung ke akun MagangHub Anda.
+
+Aplikasi ini juga bisa:
+- **Mengingatkan** Anda lewat Telegram jika laporan hari ini belum diisi.
+- **Mengisi otomatis** setiap hari pada jam tertentu (opsional).
+- **Belajar dari laporan lama** Anda, agar gaya bahasa hasil AI mirip dengan kebiasaan Anda.
+
+---
+
+## Apakah Aman?
+
+Ya. Aplikasi ini dibuat dengan prinsip **lokal dan tanpa perantara**:
+
+- **Tidak ada server pihak ketiga.** Semua proses berjalan di komputer Anda sendiri. Pengembang tidak mengumpulkan data apa pun.
+- **Data dikirim langsung ke tujuan resmi.** Laporan ke `monev-api.maganghub.kemnaker.go.id`, teks laporan ke Google Gemini, notifikasi ke Telegram. Tidak lewat mana pun selain itu.
+- **Kata sandi Anda tidak pernah dibaca atau disimpan.** Login dilakukan di browser Chrome resmi. Yang tersimpan hanya tiket sesi (di berkas `token.json`), bukan sandi.
+- **Kode terbuka.** Semua berkas bisa Anda periksa sendiri dengan editor teks biasa.
+- **Berkas pribadi tidak ikut terunggah.** Berkas berisi data pribadi sudah dikecualikan agar tidak pernah terkirim ke repositori publik.
+
+---
+
+## Persiapan Sebelum Memulai
+
+Siapkan dua hal berikut:
+
+| Yang Dibutuhkan | Keterangan |
+|---|---|
+| **Miniconda** | Program pengelola Python. Unduh di situs resmi Miniconda. Pasang dengan pengaturan bawaan. |
+| **Google Chrome** | Sudah terpasang di kebanyakan komputer. |
+| **Akun MagangHub** | Akun peserta magang Anda yang biasa dipakai untuk absen. |
+| **Koneksi internet** | Dibutuhkan saat instalasi dan saat mengirim laporan. |
+
+> Nama berkas atau folder boleh berbeda di komputer Anda. Yang penting seluruh berkas aplikasi berada dalam **satu folder yang sama**.
+
+---
+
+## Instalasi — Sekali Saja
+
+1. Letakkan seluruh berkas aplikasi dalam satu folder.
+2. Klik dua kali berkas **`SETUP_INSTAL.bat`**.
+3. Ikuti petunjuk di layar. Proses ini akan:
+   - mencari Miniconda di komputer Anda,
+   - membuat lingkungan kerja bernama `maganghub`,
+   - memasang bahan-bahan yang dibutuhkan,
+   - memasang browser untuk login,
+   - menyiapkan berkas pengaturan dan folder kerja.
+4. Tunggu hingga muncul tulisan **SETUP SELESAI**. Proses ini butuh **5 sampai 15 menit** bergantung kecepatan internet.
+
+> **Jangan tutup jendela** selama proses berjalan. Instalasi hanya perlu dilakukan sekali.
+
+Jika Muncul Pesan Miniconda Tidak Ditemukan:
+
+1. Unduh dan pasang Miniconda dari situs resminya.
+2. Tutup jendela yang sedang berjalan.
+3. Jalankan `SETUP_INSTAL.bat` sekali lagi.
+
+---
+
+## Pemakaian Sehari-hari
+
+### Langkah 1 — Login (hanya saat awal atau jika sesi habis)
+
+1. Klik dua kali **`LOGIN_MAGANGHUB.bat`**.
+2. Browser Chrome akan terbuka. Lakukan login seperti biasa.
+3. Setelah halaman dashboard MagangHub terbuka, **tutup jendela browser**.
+4. Sesi Anda tersimpan otomatis dan biasanya bertahan beberapa hari.
+
+### Langkah 2 — Isi dan Kirim Laporan
+
+1. Klik dua kali **`buka_aplikasi.bat`**.
+2. Jendela aplikasi terbuka. Isinya terbagi dua kolom:
+   - **Kolom kiri** — tempat Anda menulis catatan dan menekan tombol Generate.
+   - **Kolom kanan** — tempat hasil laporan muncul dan tombol Kirim berada.
+
+**Alur singkat:**
+
+```
+ Klik tombol kategori  →  Lengkapi catatan  →  Generate  →  Kirim
+     (kolom kiri)           (kolom kiri)      (kolom kiri)  (kolom kanan)
 ```
 
----
+3. **Tanggal dan Status** sudah terisi otomatis. Ubah bila perlu.
+4. Tulis catatan singkat di kolom kiri, atau klik tombol kategori untuk memakai template siap pakai.
+5. Tekan **Generate via Gemini** (atau tekan `Ctrl+Enter`).
+6. Hasil laporan muncul di kolom kanan. Anda bebas mengeditnya.
+7. Tekan **Kirim ke MagangHub**. Pesan status akan muncul di baris bawah.
 
-## 🚀 Panduan Pemasangan
-
-Pastikan komputer telah terpasang **Miniconda** ([Unduh di sini](https://docs.conda.io/en/latest/miniconda.html)) dan **Google Chrome**.
-
-### Opsi A: Menggunakan Batch Setup (Sangat Direkomendasikan untuk Windows)
-1. Buka folder proyek ini.
-2. Klik dua kali file [**`SETUP_INSTAL.bat`**](file:///c:/Utilities/bim_fixcode/absen-maganghub/SETUP_INSTAL.bat).
-3. Skrip otomatis mendeteksi Conda, membuat environment `maganghub` (Python 3.11), memasang seluruh pustaka, dan menyiapkan struktur direktori kerja.
-4. Selesai saat muncul tulisan **SETUP SELESAI**.
-
-### Opsi B: Pemasangan Manual via CLI / Terminal
-Jika Anda terbiasa menggunakan Command Line atau berada di lingkungan non-Windows:
-
-```bash
-# 1. Masuk ke folder proyek
-cd absen-maganghub
-
-# 2. Buat environment Conda dari berkas environment.yml
-conda env create -f environment.yml
-
-# 3. Aktifkan environment
-conda activate maganghub
-
-# 4. Pasang browser Playwright
-playwright install chromium
-
-# 5. Siapkan konfigurasi .env
-copy .env.example .env    # Windows
-# cp .env.example .env    # Linux / macOS
-```
+> **Tips:** Semakin jelas catatan Anda, semakin bagus hasil laporannya. Sebutkan jam, jenis pekerjaan, dan alat atau sistem yang Anda pakai.
 
 ---
 
-## ⚙️ Konfigurasi Variabel Lingkungan (`.env`)
+## Tombol Cepat Kategori
 
-Buka file `.env` dengan text editor untuk menyesuaikan parameter:
+Di kolom kiri tersedia tombol yang langsung mengisi catatan dengan template. Cocok saat Anda tidak ingin menulis dari nol.
 
-```dotenv
-# ============================================================
-# WAJIB (Rentang Sinkronisasi Riwayat Laporan)
-# ============================================================
-MULAI_BULAN=2026-08
-AKHIR_BULAN=2026-12
+| Tombol | Untuk Hari Seperti Apa |
+|---|---|
+| **Masuk Pagi** | Hari kerja biasa yang dimulai pagi. |
+| **Masuk Siang** | Hari kerja dengan jadwal shift siang. |
+| **Libur** | Hari libur pengganti pada hari kerja. Absen tetap wajib diisi meski tidak ada aktivitas teknis. |
+| **Piket Akhir Pekan** | Saat Anda masuk kerja pada Sabtu atau Minggu. |
+| **Belajar Mandiri** | Hari tanpa pekerjaan lapangan, dipakai untuk belajar. |
 
-# ============================================================
-# FITUR AI: GOOGLE GEMINI (Opsional tetapi Sangat Disarankan)
-# Dapatkan gratis di: https://aistudio.google.com/apikey
-# ============================================================
-GEMINI_API_KEY=AIzaSy...
-GEMINI_MODEL=gemini-2.0-flash
-
-# ============================================================
-# NOTIFIKASI TELEGRAM (Opsional)
-# ============================================================
-TELEGRAM_BOT_TOKEN=
-TELEGRAM_CHAT_ID=
-
-# ============================================================
-# PENGATURAN API & SERVER (Jarang Diubah)
-# ============================================================
-LIMIT=100
-START_HOUR=1
-END_HOUR=23
-FILL_HOUR=22
-MONEV_API_BASE=https://monev-api.maganghub.kemnaker.go.id/api/v1
-FRONTEND_BUILD_ID=fdce5864ab936c3205233ffc340ba593c0136cd2-production
-USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36
-```
+Setelah memilih template, lengkapi detailnya lalu tekan Generate. Tombol **Bersihkan** menghapus seluruh isian.
 
 ---
 
-## 💻 Alur Penggunaan
+## Pengisian Otomatis Terjadwal (Opsional)
 
-### 1. Inisialisasi Sesi Login
-Jalankan file [**`LOGIN_MAGANGHUB.bat`**](file:///c:/Utilities/bim_fixcode/absen-maganghub/LOGIN_MAGANGHUB.bat) (atau `python login_browser.py`). Browser Chrome akan terbuka. Lakukan login akun SSO MagangHub seperti biasa. Setelah dashboard terbuka, tutup browser. Token sesi akan tersimpan di `token.json`.
+Bila Anda ingin laporan terisi sendiri tanpa membuka aplikasi, jalankan **`daftar_task_scheduler.bat`**. Tiga jadwal akan dibuat:
 
-### 2. Pengambilan Basis Gaya Tulisan (Opsional)
-Jalankan:
-```bash
-python 1_ambil_data_log.py
-```
-Skrip akan mengunduh log lama Anda dan menyimpannya ke `activity_logs.json`. Gemini akan menggunakan data ini sebagai referensi gaya penulisan pribadi Anda.
-
-### 3. Penggunaan Harian via Aplikasi Desktop
-Klik dua kali [**`buka_aplikasi.bat`**](file:///c:/Utilities/bim_fixcode/absen-maganghub/buka_aplikasi.bat) (atau `python 2_aplikasi_isi_laporan.py`):
-1. Masukkan poin singkat pekerjaan Anda di kotak **Catatan aktivitas**.
-2. Tekan **Generate via Gemini (Ctrl+Enter)**.
-3. Review hasil teks pada kotak *Aktivitas Harian*, *Pelajaran*, dan *Kendala*.
-4. Klik **Kirim Laporan Harian MagangHub**.
-
-### 4. Pengisian Otomatis via Scheduler (Headless)
-Untuk mengisi otomatis tanpa membuka GUI:
-1. Buat catatan aktivitas di folder `notes/` dengan format nama `YYYY-MM-DD.txt` (contoh: `notes/2026-10-29.txt`).
-2. Daftarkan tugas terjadwal dengan menjalankan [**`daftar_task_scheduler.bat`**](file:///c:/Utilities/bim_fixcode/absen-maganghub/daftar_task_scheduler.bat).
-3. Setiap malam pukul 22:00 WIB, skrip [**`3_isi_otomatis.py`**](file:///c:/Utilities/bim_fixcode/absen-maganghub/3_isi_otomatis.py) akan memproses catatan tersebut dan mengirimkannya ke server secara mandiri.
-
----
-
-## 🔍 Panduan Penanganan Masalah (Troubleshooting)
-
-| Respon / Gejala | Diagnosa Masalah | Solusi Perbaikan |
+| Jadwal | Waktu | Kegunaan |
 |---|---|---|
-| **HTTP 401 Unauthorized** | Sesi login habis / refresh token kedaluwarsa. | Jalankan `LOGIN_MAGANGHUB.bat` untuk memperbarui sesi. |
-| **HTTP 403 Forbidden** | Nilai `FRONTEND_BUILD_ID` telah kedaluwarsa karena server MagangHub merilis versi build frontend baru. | Buka MagangHub di browser biasa, tekan `F12` (DevTools) > tab **Network**, temukan request ke `monev-api`, salin header `x-frontend-build-id`, lalu tempelkan ke `.env`. |
-| **HTTP 409 Conflict** | Laporan untuk tanggal tersebut sudah tercatat di server. | Pastikan Anda memilih tanggal yang belum diisi, atau gunakan argumen `--force` pada skrip CLI. |
-| **HTTP 422 Unprocessable** | Format data tanggal atau status kehadiran tidak valid. | Pastikan format tanggal adalah `YYYY-MM-DD` dan status adalah salah satu dari `PRESENT`, `SICK`, `LEAVE`, atau `ABSENT`. |
-| **HTTP 429 Too Many Requests** | Limit kuota permintaan Gemini API terlampaui. | Tunggu beberapa saat, atau ubah `GEMINI_MODEL=gemini-2.0-flash-lite` pada `.env`. |
-| **Participant ID not found** | Sesi belum pernah dimuat dari browser. | Pastikan telah menjalankan `LOGIN_MAGANGHUB.bat` hingga masuk halaman dashboard utama. |
+| Isi laporan | Setiap hari, malam | Mengisi laporan dari catatan harian yang Anda simpan di folder `notes`. |
+| Cek kehadiran | Setiap 30 menit | Mengirim pengingat lewat Telegram jika laporan belum diisi. |
+| Ambil riwayat | Setiap Minggu malam | Menyegarkan data laporan lama agar gaya AI tetap sesuai. |
+
+**Cara kerja pengisian otomatis:** simpan catatan Anda sebagai berkas teks di dalam folder `notes`, dengan nama sesuai tanggal. Bila berkas itu belum ada, aplikasi akan membuatkannya otomatis berisi contoh, lalu Anda cukup melengkapinya.
+
+Untuk menghentikan jadwal, jalankan **`hapus_task_scheduler.bat`**.
 
 ---
 
-## 📜 Ketentuan & Tanggung Jawab (Disclaimer)
+## Pengaturan Opsional
 
-Aplikasi ini dikembangkan sebagai alat bantu (*productivity tool*) personal bagi peserta magang untuk memudahkan administrasi pelaporan harian secara efisien. Pengguna bertanggung jawab penuh atas keakuratan, kebenaran, dan integritas isi laporan yang dikirimkan ke portal MagangHub Kemnaker.
+Buka berkas **`.env`** dengan Notepad untuk mengubah pengaturan. Semua bersifat opsional.
+
+| Pengaturan | Fungsi | Perlu Diisi? |
+|---|---|---|
+| `GEMINI_API_KEY` | Kunci AI agar laporan ditulis otomatis. | **Sangat disarankan.** Dapat gratis di situs Google AI Studio. |
+| `TELEGRAM_BOT_TOKEN` | Token bot untuk pengingat Telegram. | Opsional. |
+| `TELEGRAM_CHAT_ID` | ID obrolan tujuan notifikasi. | Opsional. |
+| `MULAI_BULAN` / `AKHIR_BULAN` | Rentang bulan untuk menarik riwayat laporan lama. | Isi sesuai masa magang. |
+| `START_HOUR` / `END_HOUR` | Jam pengiriman notifikasi. | Jarang diubah. |
+
+Setelah mengubah `.env`, simpan berkasnya lalu buka ulang aplikasi.
+
+---
+
+## Daftar Berkas Penting
+
+**Berkas yang Anda klik untuk memakai aplikasi:**
+
+| Berkas | Kapan Dijalankan |
+|---|---|
+| `SETUP_INSTAL.bat` | **Sekali saja** saat pertama memasang. |
+| `LOGIN_MAGANGHUB.bat` | Saat pertama kali, atau ketika muncul pesan sesi habis. |
+| `buka_aplikasi.bat` | **Setiap hari** untuk mengisi dan mengirim laporan. |
+| `daftar_task_scheduler.bat` | Opsional. Menyalakan pengisian otomatis. |
+| `hapus_task_scheduler.bat` | Opsional. Mematikan pengisian otomatis. |
+
+> Ingin pintasan di Desktop? Klik kanan `buka_aplikasi.bat` lalu pilih **Send to → Desktop (create shortcut)**. Jangan pindahkan berkasnya keluar dari folder aplikasi.
+
+**Berkas yang tidak perlu Anda buka:**
+
+Berkas berakhiran `.py` adalah program inti, dan berkas berakhiran `.md` adalah dokumentasi. Keduanya tidak perlu dibuka untuk memakai aplikasi.
+
+---
+
+## Jika Ada Masalah
+
+| Gejala | Penyebab Umum | Solusi |
+|---|---|---|
+| Jendela langsung tertutup saat berkas `.bat` diklik | Python atau lingkungan kerja belum siap | Jalankan `SETUP_INSTAL.bat`, lalu coba lagi. |
+| Muncul pesan "Sesi habis" atau gagal kirim | Sesi login kedaluwarsa | Jalankan `LOGIN_MAGANGHUB.bat`, login ulang. |
+| Muncul pesan build ID usang | Pengaturan aplikasi perlu diperbarui | Hubungi pembuat aplikasi untuk memperbarui pengaturan. |
+| Laporan tidak terkirim karena tanggal | Tanggal sudah terisi atau format salah | Periksa tanggal pada aplikasi, format harus `Tahun-Bulan-Hari`. |
+| Tombol Generate tidak berevolusi | Kunci AI belum diisi | Isi `GEMINI_API_KEY` pada berkas `.env`. |
+| Jadwal otomatis tidak berjalan | Komputer mati atau task belum terdaftar | Nyalakan ulang komputer, jalankan `daftar_task_scheduler.bat` sebagai Administrator. |
+
+> Untuk pengecekan mendalam, buka folder aplikasi dan lihat berkas berakhiran `.log`. Berkas itu mencatat pesan saat jadwal otomatis berjalan.
+
+---
+
+## Catatan & Tanggung Jawab
+
+- Aplikasi ini adalah alat bantu pribadi, **bukan bagian resmi** dari MagangHub Kemnaker.
+- Anda tetap bertanggung jawab memastikan laporan sesuai dengan aktivitas yang benar-benar Anda kerjakan.
+- Gunakan wajar. Jangan mengirim laporan fiktif.
+- Berkas berisi data pribadi Anda dikecualikan dari repositori publik, tetapi **jangan bagikan berkas `token.json` atau `.env`** kepada siapa pun karena berisi kunci akses akun Anda.

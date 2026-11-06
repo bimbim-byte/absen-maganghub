@@ -42,5 +42,6 @@ Galaxies/
 # Data pribadi hasil skrip (jangan di-commit)
 activity_logs.json
 generated_log.json
+classification_summary.json
 notes/
 drafts/

@@ -5,32 +5,10 @@ import subprocess
 import requests
 from datetime import datetime
 import pytz
+from env_loader import load_env
+load_env()
 
-# ============================================================
-# HELPER PEMUATAN ENVIRONMENT VARIABLE (.env)
-# ============================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ENV_FILE_PATH = os.path.join(BASE_DIR, ".env")
-
-try:
-    from dotenv import load_dotenv
-    load_dotenv(ENV_FILE_PATH)
-except ImportError:
-    # Fallback loader jika python-dotenv belum terpasang
-    if os.path.exists(ENV_FILE_PATH):
-        try:
-            with open(ENV_FILE_PATH, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#") or "=" not in line:
-                        continue
-                    k, v = line.split("=", 1)
-                    k = k.strip()
-                    v = v.strip().strip("'\"")
-                    if k and k not in os.environ:
-                        os.environ[k] = v
-        except Exception:
-            pass
 
 # ============================================================
 # KONFIGURASI UTAMA
